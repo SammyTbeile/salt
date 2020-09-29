@@ -289,37 +289,43 @@ def swarm_service_info(service_name=str):
         version = dump["Version"]["Index"]
         name = dump["Spec"]["Name"]
         network_mode = dump["Spec"]["EndpointSpec"]["Mode"]
-        ports = dump["Spec"]["EndpointSpec"]["Ports"]
+        ports = dump["Spec"]["EndpointSpec"].get( "Ports" )
         swarm_id = dump["ID"]
         create_date = dump["CreatedAt"]
         update_date = dump["UpdatedAt"]
         labels = dump["Spec"]["Labels"]
-        replicas = dump["Spec"]["Mode"]["Replicated"]["Replicas"]
+        replicas = dump["Spec"]["Mode"].get( "Replicated",{} ).get( "Replicas" )
         network = dump["Endpoint"]["VirtualIPs"]
         image = dump["Spec"]["TaskTemplate"]["ContainerSpec"]["Image"]
-        for items in ports:
-            published_port = items["PublishedPort"]
-            target_port = items["TargetPort"]
-            published_mode = items["PublishMode"]
-            protocol = items["Protocol"]
-            salt_return.update(
-                {
-                    "Service Name": name,
-                    "Replicas": replicas,
-                    "Service ID": swarm_id,
-                    "Network": network,
-                    "Network Mode": network_mode,
-                    "Creation Date": create_date,
-                    "Update Date": update_date,
-                    "Published Port": published_port,
-                    "Target Port": target_port,
-                    "Published Mode": published_mode,
-                    "Protocol": protocol,
-                    "Docker Image": image,
-                    "Minion Id": __context__["server_name"],
-                    "Version": version,
-                }
-            )
+        if ports is not None:
+            for items in ports:
+                published_port = items["PublishedPort"]
+                target_port = items["TargetPort"]
+                published_mode = items["PublishMode"]
+                protocol = items["Protocol"]
+                salt_return.update(
+                    {
+                        "Published Port": published_port,
+                        "Target Port": target_port,
+                        "Published Mode": published_mode,
+                        "Protocol": protocol
+                    }
+                )
+
+        salt_return.update( {
+            "Service Name": name,
+            "Replicas": replicas,
+            "Service ID": swarm_id,
+            "Network": network,
+            "Network Mode": network_mode,
+            "Creation Date": create_date,
+            "Update Date": update_date,
+            "Docker Image": image,
+            "Minion Id": __context__["server_name"],
+            "Version": version
+            }
+        )
+
     except TypeError:
         salt_return = {}
         salt_return.update({"Error": "service_name arg is missing?"})
